@@ -13,7 +13,6 @@ namespace DogGo.Repositories
     {
         private readonly IConfiguration _config;
 
-        // The constructor accepts an IConfiguration object as a parameter. This class comes from the ASP.NET framework and is useful for retrieving things out of the appsettings.json file like connection strings.
         public OwnerRepository(IConfiguration config)
         {
             _config = config;
@@ -27,7 +26,7 @@ namespace DogGo.Repositories
             }
         }
 
-        public List<Owner> GetAllOwners()
+        public List<Owner> GetOwners()
         {
             using (SqlConnection conn = Connection)
             {
@@ -35,8 +34,9 @@ namespace DogGo.Repositories
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
-                        SELECT Id, [Name], Email, Address, NeighborhoodId, Phone
-                        FROM Owner
+                        SELECT o.Id, o.[Name], o.Email, o.Address, o.NeighborhoodId, o.Phone, n.[Name] as Neighborhood
+                        FROM Owner o
+                        JOIN Neighborhood n ON o.NeighborhoodId = n.Id
                     ";
 
                     SqlDataReader reader = cmd.ExecuteReader();
@@ -50,9 +50,12 @@ namespace DogGo.Repositories
                             Name = reader.GetString(reader.GetOrdinal("Name")),
                             Email = reader.GetString(reader.GetOrdinal("Email")),
                             Address = reader.GetString(reader.GetOrdinal("Address")),
-                            NeighborhoodId = reader.GetInt32(reader.GetOrdinal("NeighborhoodId")),
-                            Phone = reader.GetString(reader.GetOrdinal("Phone"))
-
+                            Phone = reader.GetString(reader.GetOrdinal("Phone")),
+                            Neighborhood = new Neighborhood()
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("NeighborhoodId")),
+                                Name = reader.GetString(reader.GetOrdinal("Neighborhood")),
+                            }
                         };
 
                         owners.Add(owner);
@@ -65,7 +68,7 @@ namespace DogGo.Repositories
             }
         }
 
-        public Owner GetOwnerById(int id)
+        public Owner GetById(int id)
         {
             using (SqlConnection conn = Connection)
             {
@@ -73,39 +76,42 @@ namespace DogGo.Repositories
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
-                        SELECT Id, [Name], Address, Email, NeighborhoodId, Phone
-                        FROM Owner
-                        WHERE Id = @id
+                        SELECT o.Id, o.[Name], o.Email, o.Address, o.NeighborhoodId, o.Phone, n.[Name] as Neighborhood
+                        FROM Owner o
+                        JOIN Neighborhood n ON o.NeighborhoodId = n.Id
+                        WHERE o.Id = @id
                     ";
 
                     cmd.Parameters.AddWithValue("@id", id);
-
                     SqlDataReader reader = cmd.ExecuteReader();
+
+                    Owner owner = null;
 
                     if (reader.Read())
                     {
-                        Owner owner = new Owner
+                        owner = new Owner
                         {
                             Id = reader.GetInt32(reader.GetOrdinal("Id")),
                             Name = reader.GetString(reader.GetOrdinal("Name")),
-                            Address = reader.GetString(reader.GetOrdinal("Address")),
                             Email = reader.GetString(reader.GetOrdinal("Email")),
+                            Address = reader.GetString(reader.GetOrdinal("Address")),
+                            Phone = reader.GetString(reader.GetOrdinal("Phone")),
                             NeighborhoodId = reader.GetInt32(reader.GetOrdinal("NeighborhoodId")),
-                            Phone = reader.GetString(reader.GetOrdinal("Phone"))
-
+                            Neighborhood = new Neighborhood()
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("NeighborhoodId")),
+                                Name = reader.GetString(reader.GetOrdinal("Neighborhood")),
+                            }
                         };
+                    }
 
-                        reader.Close();
-                        return owner;
-                    }
-                    else
-                    {
-                        reader.Close();
-                        return null;
-                    }
+                    reader.Close();
+
+                    return owner;
                 }
             }
         }
+
         public Owner GetOwnerByEmail(string email)
         {
             using (SqlConnection conn = Connection)
@@ -200,6 +206,7 @@ namespace DogGo.Repositories
                 }
             }
         }
+
         public void DeleteOwner(int ownerId)
         {
             using (SqlConnection conn = Connection)
