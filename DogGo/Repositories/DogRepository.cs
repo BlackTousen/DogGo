@@ -132,11 +132,11 @@ namespace DogGo.Repositories
                         };
 
                         // Check if optional columns are null
-                        if (reader.IsDBNull(reader.GetOrdinal("Notes")) == false)
+                        if (!reader.IsDBNull(reader.GetOrdinal("Notes")))
                         {
                             dog.Notes = reader.GetString(reader.GetOrdinal("Notes"));
                         }
-                        if (reader.IsDBNull(reader.GetOrdinal("ImageUrl")) == false)
+                        if (!reader.IsDBNull(reader.GetOrdinal("ImageUrl")))
                         {
                             dog.ImageUrl = reader.GetString(reader.GetOrdinal("Notes"));
                         }
